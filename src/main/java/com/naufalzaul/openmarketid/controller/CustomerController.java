@@ -51,6 +51,7 @@ public class CustomerController {
 
         return ResponseEntity.ok(response);
     }
+
     @GetMapping(APIBash.FIND_BY_AUTH_TOKEN)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<CommonResponse<CustomerResponse>> findCustomerByUserEmail() {

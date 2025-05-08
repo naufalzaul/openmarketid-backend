@@ -5,13 +5,7 @@ import lombok.Builder;
 @Builder
 public record ProductTaxResponse(
         String id,
-        String productId,
-        String taxId,
+        String description,
+        Double percentage,
         Boolean isActive
-        //        String productName,
-        //        Double productPrice,
-        //        Integer productAvailableQuantity,
-        //        String taxDescription,
-        //        Double taxPercentage,
-        //        Boolean isActive
 ) {}

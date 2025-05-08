@@ -13,6 +13,7 @@ import java.util.List;
 public class ProductMapper {
 
     private final ProductTaxMapper productTaxMapper;
+    private final TaxMapper taxMapper;
 
     public ProductResponse fromProduct(Product product) {
         List<ProductTaxResponse> productTaxResponses = product.getProductTaxes().stream()

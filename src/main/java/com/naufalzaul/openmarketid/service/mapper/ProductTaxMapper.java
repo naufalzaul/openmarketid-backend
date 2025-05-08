@@ -9,8 +9,10 @@ public class ProductTaxMapper {
     public ProductTaxResponse fromProductTax(ProductTax productTax) {
         return new ProductTaxResponse(
                 productTax.getId(),
-                productTax.getProduct().getId(),
-                productTax.getTax().getId(),
+                productTax.getTax().getDescription(),
+                productTax.getTax().getTaxPercentage(),
+                //                productTax.getProduct().getId(),
+                //                productTax.getTax().getId(),
                 productTax.getIsActive()
         );
     }

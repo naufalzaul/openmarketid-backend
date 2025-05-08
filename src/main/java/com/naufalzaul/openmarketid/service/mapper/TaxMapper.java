@@ -21,8 +21,8 @@ public class TaxMapper {
                 tax.getId(),
                 tax.getDescription(),
                 tax.getTaxPercentage(),
-                tax.getIsActive(),
-                productTaxResponses
+                tax.getIsActive()
+//                productTaxResponses
         );
     }
 }
