@@ -12,6 +12,6 @@ public interface TransactionService {
     TransactionResponse createTransaction(TransactionRequest request);
     List<TransactionResponse> findAllTransactions();
     List<TransactionResponse> findAllTransactionsByUserEmail();
-    Page<Transaction> filterTransaction(TransactionFilterRequest request);
+    Page<TransactionResponse> filterTransaction(TransactionFilterRequest request);
     void canceledTransaction(String id);
 }

@@ -48,7 +48,7 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<CommonResponse<Page<Transaction>>> filterTransactions(
+    public ResponseEntity<CommonResponse<Page<TransactionResponse>>> filterTransactions(
             @RequestParam(name = "customerName",required = false) String customerName,
             @RequestParam(name = "paymentMethod",required = false) String paymentMethod,
             @RequestParam(name = "transactionStatus",required = false) String transactionStatus,
@@ -75,9 +75,9 @@ public class TransactionController {
                 .build();
 
 
-        Page<Transaction> transactionResponses = transactionService.filterTransaction(request);
+        Page<TransactionResponse> transactionResponses = transactionService.filterTransaction(request);
 
-        CommonResponse<Page<Transaction>> response = new CommonResponse<>(
+        CommonResponse<Page<TransactionResponse>> response = new CommonResponse<>(
                 HttpStatus.OK.value(),
                 "Transactions found",
                 transactionResponses

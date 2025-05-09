@@ -17,9 +17,14 @@ import com.naufalzaul.openmarketid.service.ProductService;
 import com.naufalzaul.openmarketid.service.TransactionDetailService;
 import com.naufalzaul.openmarketid.service.TransactionService;
 import com.naufalzaul.openmarketid.service.mapper.TransactionMapper;
+import com.naufalzaul.openmarketid.spesification.TransactionSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -123,24 +128,22 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Page<Transaction> filterTransaction(TransactionFilterRequest request) {
+    public Page<TransactionResponse> filterTransaction(TransactionFilterRequest request) {
 
         if (request.getPage() <= 0) request.setPage(1);
 
-        System.out.println(request);
-        return null;
-        //        Sort sortBy = Sort.by(
-        //                Sort.Direction.fromString(request.getDirection()), request.getSortBy()
-        //        );
-        //
-        //        Pageable pageable = PageRequest.of((request.getPage() - 1), request.getSize(), sortBy);
-        //
-        //
-        //        Specification<Transaction> specification =
-        //                TransactionSpecification.getSpecification(request);
-        //
-        //        return transactionRepository.findAll(specification, pageable);
-        //        return transactions.map(transactionMapper::fromTransaction);
+        Sort sortBy = Sort.by(
+                Sort.Direction.fromString(request.getDirection()), request.getSortBy()
+        );
+
+        Pageable pageable = PageRequest.of((request.getPage() - 1), request.getSize(), sortBy);
+
+
+        Specification<Transaction> specification =
+                TransactionSpecification.getSpecification(request);
+
+        Page<Transaction> transactionPage = transactionRepository.findAll(specification, pageable);
+        return transactionPage.map(transactionMapper::fromTransaction);
     }
 
     @Override
