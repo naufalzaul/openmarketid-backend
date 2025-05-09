@@ -1,5 +1,6 @@
 package com.naufalzaul.openmarketid.service.impl;
 
+import com.naufalzaul.openmarketid.constant.PaymentMethod;
 import com.naufalzaul.openmarketid.constant.TransactionStatus;
 import com.naufalzaul.openmarketid.entity.Customer;
 import com.naufalzaul.openmarketid.entity.Product;
@@ -51,14 +52,9 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     @Override
     public TransactionResponse createTransaction(TransactionRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-
-        List<String> roles = authorities.stream()
-                .map(GrantedAuthority::getAuthority).toList();
-
         Customer customerById = customerService.findCustomerById(request.getCustomerId());
+
+        System.out.println(customerById);
 
         double netAmount = 0.0;
         double totalTax = 0.0;
@@ -68,7 +64,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .customer(customerById)
                 .transactionDate(LocalDateTime.now())
                 .transactionStatus(TransactionStatus.NOT_PAID)
-                .paymentMethod(request.getPaymentMethod())
+                .paymentMethod(PaymentMethod.findByMethod(request.getPaymentMethod()))
                 .transactionDetails(new ArrayList<>())
                 .build();
 
@@ -97,12 +93,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setNetAmount(netAmount);
         transaction.setTotalTax(totalTax);
         transaction.setTotalAmount(totalAmount);
-
-        if (roles.contains("ROLE_ADMIN")) {
-            transaction.setCreatedBy("Administrator");
-        } else {
-            transaction.setCreatedBy(customerById.getName());
-        }
+        transaction.setCreatedBy(customerById.getName());
 
         transactionRepository.save(transaction);
 
@@ -138,18 +129,18 @@ public class TransactionServiceImpl implements TransactionService {
 
         System.out.println(request);
         return null;
-//        Sort sortBy = Sort.by(
-//                Sort.Direction.fromString(request.getDirection()), request.getSortBy()
-//        );
-//
-//        Pageable pageable = PageRequest.of((request.getPage() - 1), request.getSize(), sortBy);
-//
-//
-//        Specification<Transaction> specification =
-//                TransactionSpecification.getSpecification(request);
-//
-//        return transactionRepository.findAll(specification, pageable);
-//        return transactions.map(transactionMapper::fromTransaction);
+        //        Sort sortBy = Sort.by(
+        //                Sort.Direction.fromString(request.getDirection()), request.getSortBy()
+        //        );
+        //
+        //        Pageable pageable = PageRequest.of((request.getPage() - 1), request.getSize(), sortBy);
+        //
+        //
+        //        Specification<Transaction> specification =
+        //                TransactionSpecification.getSpecification(request);
+        //
+        //        return transactionRepository.findAll(specification, pageable);
+        //        return transactions.map(transactionMapper::fromTransaction);
     }
 
     @Override

@@ -17,7 +17,7 @@ public class TransactionRequest {
     private String customerId;
 
     @NotNull(message = "Payment method is required")
-    private PaymentMethod paymentMethod;
+    private String paymentMethod;
 
     @NotNull(message = "List product is required")
     private List<TransactionDetailRequest> products;

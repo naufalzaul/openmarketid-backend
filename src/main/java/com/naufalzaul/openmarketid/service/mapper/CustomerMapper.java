@@ -10,6 +10,7 @@ public class CustomerMapper {
         return new CustomerResponse(
                 customer.getId(),
                 customer.getName(),
+                customer.getUser().getEmail(),
                 customer.getBirthDate().toString(),
                 customer.getBirthPlace(),
                 customer.getCreatedBy(),

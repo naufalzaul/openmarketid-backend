@@ -8,5 +8,8 @@ import java.util.Optional;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, String> {
+    @Override
+    Optional<Customer> findById(String string);
+
     Optional<Customer> findByUserEmail(String email);
 }

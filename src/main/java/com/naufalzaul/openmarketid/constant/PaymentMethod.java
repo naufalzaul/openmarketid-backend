@@ -13,4 +13,13 @@ public enum PaymentMethod {
     PaymentMethod(String value) {
         this.value = value;
     }
+
+    public static PaymentMethod findByMethod(String method) {
+        for (PaymentMethod paymentMethod : values()) {
+            if (paymentMethod.value.equalsIgnoreCase(method)) {
+                return paymentMethod;
+            }
+        }
+        throw new IllegalArgumentException("Invalid role: " + method);
+    }
 }
