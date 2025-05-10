@@ -2,10 +2,7 @@ package com.naufalzaul.openmarketid.service.impl;
 
 import com.naufalzaul.openmarketid.constant.PaymentMethod;
 import com.naufalzaul.openmarketid.constant.TransactionStatus;
-import com.naufalzaul.openmarketid.entity.Customer;
-import com.naufalzaul.openmarketid.entity.Product;
-import com.naufalzaul.openmarketid.entity.Transaction;
-import com.naufalzaul.openmarketid.entity.TransactionDetail;
+import com.naufalzaul.openmarketid.entity.*;
 import com.naufalzaul.openmarketid.exception.DataNotFoundException;
 import com.naufalzaul.openmarketid.model.request.transaction.TransactionDetailRequest;
 import com.naufalzaul.openmarketid.model.request.transaction.TransactionFilterRequest;
@@ -14,7 +11,6 @@ import com.naufalzaul.openmarketid.model.response.TransactionResponse;
 import com.naufalzaul.openmarketid.repository.*;
 import com.naufalzaul.openmarketid.service.CustomerService;
 import com.naufalzaul.openmarketid.service.ProductService;
-import com.naufalzaul.openmarketid.service.TransactionDetailService;
 import com.naufalzaul.openmarketid.service.TransactionService;
 import com.naufalzaul.openmarketid.service.mapper.TransactionMapper;
 import com.naufalzaul.openmarketid.spesification.TransactionSpecification;
@@ -29,6 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -43,72 +40,88 @@ import static java.lang.String.format;
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
-    private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final CustomerService customerService;
-    private final ProductRepository productRepository;
     private final ProductService productService;
-    private final ProductTaxRepository productTaxRepository;
     private final TransactionRepository transactionRepository;
-    private final TransactionDetailService transactionDetailService;
+    private final TransactionDetailRepository detailRepository;
+    private final TransactionDetailTaxRepository detailTaxRepository;
     private final TransactionMapper transactionMapper;
 
-
-    @Transactional
+    @Transactional(
+            isolation = Isolation.READ_COMMITTED,
+            rollbackFor = Exception.class
+    )
     @Override
     public TransactionResponse createTransaction(TransactionRequest request) {
-        Customer customerById = customerService.findCustomerById(request.getCustomerId());
-
-        System.out.println(customerById);
+        Customer customer = customerService.findCustomerById(request.getCustomerId());
 
         double netAmount = 0.0;
         double totalTax = 0.0;
-        double totalAmount = 0.0;
+        List<TransactionDetail> transactionDetails = new ArrayList<>();
 
-        Transaction createNewTransaction = Transaction.builder()
-                .customer(customerById)
+        Transaction transaction = Transaction.builder()
+                .customer(customer)
                 .transactionDate(LocalDateTime.now())
                 .transactionStatus(TransactionStatus.NOT_PAID)
                 .paymentMethod(PaymentMethod.findByMethod(request.getPaymentMethod()))
+                .createdBy(customer.getName())
                 .transactionDetails(new ArrayList<>())
                 .build();
 
-        Transaction transaction = transactionRepository.save(createNewTransaction);
+        transaction = transactionRepository.save(transaction);
 
         for (TransactionDetailRequest detailRequest : request.getProducts()) {
-            TransactionDetail transactionDetail = transactionDetailService
-                    .createTransactionDetail(detailRequest, transaction);
-            Product product = transactionDetail.getProduct();
+            Product product = productService.findProductById(detailRequest.getProductId());
 
             if (product.getAvailableQuantity() < detailRequest.getQuantity()) {
                 throw new RuntimeException("Less quantity of product availability");
             }
 
             double productNetAmount = product.getPrice() * detailRequest.getQuantity();
-            double productTaxAmount = transactionDetail.getTaxAmount();
+            double taxAmount = 0.0;
+            List<TransactionDetailTax> taxList = new ArrayList<>();
+
+            for (ProductTax productTax : product.getProductTaxes()) {
+                double percentage = productTax.getTax().getTaxPercentage();
+                double taxForThis = productNetAmount * (percentage / 100);
+                taxAmount += taxForThis;
+
+                TransactionDetailTax tax = TransactionDetailTax.builder()
+                        .tax(productTax.getTax())
+                        .taxPercentage(percentage)
+                        .build();
+
+                taxList.add(tax);
+            }
+
+            TransactionDetail detail = TransactionDetail.builder()
+                    .transaction(transaction)
+                    .product(product)
+                    .totalQuantity(detailRequest.getQuantity())
+                    .taxAmount(taxAmount)
+                    .transactionDetailTaxes(new ArrayList<>())
+                    .build();
+
+            detail = detailRepository.save(detail);
+
+            for (TransactionDetailTax tax : taxList) {
+                tax.setTransactionDetail(detail);
+                detailTaxRepository.save(tax);
+                detail.getTransactionDetailTaxes().add(tax);
+            }
 
             netAmount += productNetAmount;
-            totalTax += productTaxAmount;
-
-            transaction.getTransactionDetails().add(transactionDetail);
+            totalTax += taxAmount;
+            transactionDetails.add(detail);
         }
-
-        totalAmount = netAmount + totalTax;
 
         transaction.setNetAmount(netAmount);
         transaction.setTotalTax(totalTax);
-        transaction.setTotalAmount(totalAmount);
-        transaction.setCreatedBy(customerById.getName());
-
+        transaction.setTotalAmount(netAmount + totalTax);
+        transaction.setTransactionDetails(transactionDetails);
         transactionRepository.save(transaction);
-
         return transactionMapper.fromTransaction(transaction);
-    }
-
-    @Override
-    public List<TransactionResponse> findAllTransactions() {
-        return transactionRepository.findAll().stream()
-                .map(transactionMapper::fromTransaction).toList();
     }
 
     @Override
@@ -152,6 +165,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new DataNotFoundException(
                         format("Transaction not found with id %s", id)));
 
-        //        transaction.setPaymentStatus(PaymentStatus.CANCELLED);
+        transaction.setTransactionStatus(TransactionStatus.CANCELLED);
     }
 }

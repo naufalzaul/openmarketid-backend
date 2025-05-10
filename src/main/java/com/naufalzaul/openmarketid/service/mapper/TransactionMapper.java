@@ -1,5 +1,6 @@
 package com.naufalzaul.openmarketid.service.mapper;
 
+import com.naufalzaul.openmarketid.entity.Product;
 import com.naufalzaul.openmarketid.entity.Transaction;
 import com.naufalzaul.openmarketid.model.response.CustomerResponse;
 import com.naufalzaul.openmarketid.model.response.TransactionDetailResponse;
@@ -8,20 +9,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
+import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TransactionMapper {
 
     private final CustomerMapper customerMapper;
-    private final TransactionDetailMapper detailMapper;
+    private final TransactionDetailMapper transactionDetailMapper;
 
     public TransactionResponse fromTransaction(Transaction transaction) {
 
         CustomerResponse customerResponse = customerMapper.fromCustomer(transaction.getCustomer());
 
-        List<TransactionDetailResponse> detailResponses =
-                transaction.getTransactionDetails().stream().map(detailMapper::fromTransactionDetail).toList();
+        List<TransactionDetailResponse> transactionDetailResponses = getTransactionDetailResponses(transaction);
 
         return new TransactionResponse(
                 transaction.getId(),
@@ -31,9 +31,16 @@ public class TransactionMapper {
                 transaction.getTotalAmount(),
                 transaction.getTransactionDate(),
                 transaction.getTransactionStatus(),
-                detailResponses,
+                transactionDetailResponses,
                 transaction.getPaymentMethod(),
                 transaction.getPaymentDate()
         );
+    }
+
+    private List<TransactionDetailResponse> getTransactionDetailResponses(Transaction transaction) {
+        return transaction.getTransactionDetails()
+                .stream()
+                .map(transactionDetailMapper::fromTransactionDetail)
+                .collect(Collectors.toList());
     }
 }
